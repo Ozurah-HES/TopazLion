@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.Valid;
+import ch.hearc.topazlion.model.AnnData;
 import ch.hearc.topazlion.model.Media;
 import ch.hearc.topazlion.service.impl.MediaService;
 
@@ -46,17 +48,69 @@ public class MediaController {
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
-            
+
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(errorsJson);
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        // media.setImgUrl("created url");
-        // media.setName("created name");
-        // media.setNbPublished(111);
+        // Serialize data to json (response)
+        Map<String, Object> response = new HashMap<>();
+        response.put("media-will-be-add", media);
 
-        // Convert media to json
+        String jsonResponse = null;
+        try {
+            jsonResponse = objectMapper.writeValueAsString(response);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jsonResponse);
+    }
+
+    @PostMapping(value = "/fromANN", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<String> createFromANN(@RequestBody String json) {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String errorsJson = null;
+
+        // Retrieve data from JSON
+        long annID = 0;
+        int nbPublished = 0;
+        try {
+            JsonNode jsonNode = objectMapper.readTree(json);
+            annID = jsonNode.get("ann-id").asLong();
+
+            String keyNbPublished = "nb-published";
+            if (jsonNode.has(keyNbPublished)) {
+                nbPublished = jsonNode.get(keyNbPublished).asInt();
+            }
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        Media media = new Media();
+        media.setNbPublished(nbPublished);
+
+        try {
+            AnnData annData = mediaService.getAnnData(annID);
+            media.setImgUrl(annData.getImage());
+            media.setName(annData.getMainTitle());
+
+            System.out.println("AnnData: " + annData);
+        } catch (JsonProcessingException e) {
+            try {
+                errorsJson = objectMapper.writeValueAsString("Cannot fetch data from ANN with id: " + annID);
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                        .body(errorsJson);
+            } catch (JsonProcessingException e1) {
+                // TODO Auto-generated catch block
+                e1.printStackTrace();
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                        .body("Error while generating error message");
+            }
+        }
+
         // Serialize data to json (response)
         Map<String, Object> response = new HashMap<>();
         response.put("media-will-be-add", media);

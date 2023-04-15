@@ -1,9 +1,12 @@
 package ch.hearc.topazlion.service;
 
-import ch.hearc.topazlion.model.Media;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+
+import ch.hearc.topazlion.model.AnnData;
 
 public interface MediaService_I {
 
-    public void fetch_ANN(Media fetchOn, long annId);
+    public AnnData getAnnData(long annId) throws JsonMappingException, JsonProcessingException;
     
 }
