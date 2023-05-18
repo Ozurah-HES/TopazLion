@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,9 @@ public class MediaController {
 
     @Autowired
     private MediaService mediaService;
+
+    @Autowired
+    JmsTemplate jmsTemplate;
 
     @PostMapping(value = "/", consumes = "application/json", produces = "application/json")
     public ResponseEntity<String> create(@Valid @RequestBody Media media, BindingResult errors) {
@@ -76,10 +80,16 @@ public class MediaController {
 
         // Retrieve data from JSON
         long annID = 0;
+        Long mediaID = null;
         int nbPublished = 0;
         try {
             JsonNode jsonNode = objectMapper.readTree(json);
             annID = jsonNode.get("ann-id").asLong();
+
+            String keyMediaID = "id";
+            if (jsonNode.has(keyMediaID)) {
+                mediaID = jsonNode.get(keyMediaID).asLong();
+            }
 
             String keyNbPublished = "nb-published";
             if (jsonNode.has(keyNbPublished)) {
@@ -90,6 +100,7 @@ public class MediaController {
         }
 
         Media media = new Media();
+        media.setId(mediaID);
         media.setNbPublished(nbPublished);
 
         try {
@@ -121,6 +132,9 @@ public class MediaController {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
+
+        // Send media to other microservice
+        jmsTemplate.convertAndSend("media-json-q", media);
 
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jsonResponse);
     }

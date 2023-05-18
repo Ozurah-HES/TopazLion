@@ -41,6 +41,23 @@
 		    </exclusions>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.activemq</groupId>
+			<artifactId>activemq-broker</artifactId>
+			<version>5.18.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.activemq</groupId>
+					<artifactId>activemq-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.activemq</groupId>
+			<artifactId>activemq-client-jakarta</artifactId>
+			<version>5.18.1</version>
+		</dependency>
+
 		<!-- Json & XML de-serilisation -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
