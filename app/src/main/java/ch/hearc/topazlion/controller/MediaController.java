@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.Valid;
+import ch.hearc.topazlion.TopazLionApplication;
 import ch.hearc.topazlion.model.AnnData;
 import ch.hearc.topazlion.model.Media;
 import ch.hearc.topazlion.service.impl.MediaService;
@@ -29,13 +32,35 @@ import ch.hearc.topazlion.service.impl.MediaService;
 @RequestMapping("/api/media")
 public class MediaController {
 
+    @Value("${spring.activemq.media-json-queue}")
+    private String mediaJsonQueue;
+
     @Autowired
     private MediaService mediaService;
 
     @Autowired
-    JmsTemplate jmsTemplate;
+    private JmsTemplate jmsTemplate;
 
-    @PostMapping(value = "/", consumes = "application/json", produces = "application/json")
+    @GetMapping(value = "/last-response", produces = "application/json")
+    public ResponseEntity<String> getLastResponse() {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Serialize data to json (response)
+        Map<String, Object> response = new HashMap<>();
+        response.put("last-media-response", TopazLionApplication.getLastMediaResponse());
+
+        String jsonResponse = null;
+        try {
+            jsonResponse = objectMapper.writeValueAsString(response);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jsonResponse);
+    }
+
+    @PostMapping(value = "", consumes = "application/json", produces = "application/json")
     public ResponseEntity<String> create(@Valid @RequestBody Media media, BindingResult errors) {
 
         if (errors.hasErrors()) {
@@ -50,7 +75,8 @@ public class MediaController {
             try {
                 errorsJson = objectMapper.writeValueAsString(errorsResponse);
             } catch (JsonProcessingException e) {
-                e.printStackTrace();
+                return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                        .body("Error while generating error message");
             }
 
             return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(errorsJson);
@@ -58,18 +84,7 @@ public class MediaController {
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        // Serialize data to json (response)
-        Map<String, Object> response = new HashMap<>();
-        response.put("media-will-be-add", media);
-
-        String jsonResponse = null;
-        try {
-            jsonResponse = objectMapper.writeValueAsString(response);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jsonResponse);
+        return sendToSaphirLion(objectMapper, media);
     }
 
     @PostMapping(value = "/fromANN", consumes = "application/json", produces = "application/json")
@@ -96,7 +111,8 @@ public class MediaController {
                 nbPublished = jsonNode.get(keyNbPublished).asInt();
             }
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                    .body("Error while parsing JSON");
         }
 
         Media media = new Media();
@@ -115,26 +131,31 @@ public class MediaController {
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
                         .body(errorsJson);
             } catch (JsonProcessingException e1) {
-                // TODO Auto-generated catch block
                 e1.printStackTrace();
                 return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
                         .body("Error while generating error message");
             }
         }
 
+        return sendToSaphirLion(objectMapper, media);
+    }
+
+    private ResponseEntity<String> sendToSaphirLion(ObjectMapper objectMapper, Media media) {
         // Serialize data to json (response)
         Map<String, Object> response = new HashMap<>();
         response.put("media-will-be-add", media);
+        response.put("information", "\"To get the result of SaphirLion, check route `GET /api/media/last-response`\"");
 
         String jsonResponse = null;
         try {
             jsonResponse = objectMapper.writeValueAsString(response);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                    .body("Error while generating response message");
         }
 
         // Send media to other microservice
-        jmsTemplate.convertAndSend("media-json-q", media);
+        jmsTemplate.convertAndSend(mediaJsonQueue, media);
 
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(jsonResponse);
     }
