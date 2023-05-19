@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.Valid;
-import ch.hearc.topazlion.TopazLionApplication;
+import ch.hearc.topazlion.jms.SaphirLionExchange;
 import ch.hearc.topazlion.model.AnnData;
 import ch.hearc.topazlion.model.Media;
 import ch.hearc.topazlion.service.impl.MediaService;
@@ -48,7 +48,7 @@ public class MediaController {
 
         // Serialize data to json (response)
         Map<String, Object> response = new HashMap<>();
-        response.put("last-media-response", TopazLionApplication.getLastMediaResponse());
+        response.put("last-media-response", SaphirLionExchange.getLastMediaResponse());
 
         String jsonResponse = null;
         try {

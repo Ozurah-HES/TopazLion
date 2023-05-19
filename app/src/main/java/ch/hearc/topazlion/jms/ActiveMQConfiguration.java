@@ -1,4 +1,4 @@
-package ch.hearc.topazlion;
+package ch.hearc.topazlion.jms;
 
 import jakarta.jms.ConnectionFactory;
 import jakarta.jms.Destination;
