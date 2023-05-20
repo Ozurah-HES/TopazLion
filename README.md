@@ -7,6 +7,8 @@ Topaz Lion est une application web avec le Framework Spring (Java) permettant de
 
 L'application a été développée par [Jonas Allemann](https://github.com/Ozurah) et [Sébastien Chappuis](https://github.com/seba-chappuis) dans le cadre du cours de "JEE/Spring II" de 3ème année en développement logiciel, en ingénierie à la [Haute Ecole Arc](https://he-arc.ch/).
 
+**Topaz Lion** est fonctionnelle avec la **Version 2** de Saphir Lion ([branche "SP"](https://github.com/Ozurah-HES/SaphirLion/tree/SP) ou [Tag "v2-Rendu-SP"](https://github.com/Ozurah-HES/SaphirLion/releases/tag/v2-Rendu-SP)).
+
 # Documents
 Pour en apprendre d'avantage sur le projet, vous pouvez consulter les documents disponible sur le [wiki](https://github.com/Ozurah-HES/SaphirLion/wiki).
 
